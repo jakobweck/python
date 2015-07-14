@@ -1,0 +1,8 @@
+from Tkinter import *
+import datetime
+y = int(input ("Input the year of your birth:"))
+m = int(input ("Input the month of your birth:"))
+d = int(input ("Input the day of your birth:"))
+today = datetime.date.today()
+birthday = datetime.date(y, m, d)
+diff = today - birthday
