@@ -1,24 +1,23 @@
 import pygame, sys
 from pygame.locals import *
 class chessPiece(pygame.sprite.Sprite):
-    def __init__(self,team,piecetype, name,default_pos,fillcolor):
+    def __init__(self,team,piecetype, name,default_pos):
         self.team = team
         self.piecetype = piecetype
         self.name = name
-        self.defpos = default_pos
-        self.fillcolor = fillcolor
+        self.pos = default_pos
         pygame.sprite.Sprite.__init__(self)
         self.image= pygame.image.load(self.team + self.piecetype +'.png')
-        self.defrect = self.image.get_rect()
+        self.prevrect = self.image.get_rect()
         self.rect = self.image.get_rect()
-    def update(self, pos, is_moving):
+    def update(self, pos, is_moving, fillcolor):
+        self.fillcolor = fillcolor
+        self.prevrect.center = self.pos
         self.pos = pos
-        self.defrect.center = self.defpos
         self.is_moving = is_moving
         self.rect.center = self.pos
         if self.is_moving:
-            print self.defrect
-            Main.DISPLAYSURF.fill(self.fillcolor, self.defrect)
+            Main.screen.fill(self.fillcolor, self.prevrect)
     size = 50
 class Main:
     def __init__(self):
@@ -26,7 +25,8 @@ class Main:
         FPS = 30
         fpsclock = pygame.time.Clock()
         #create display surface
-        Main.DISPLAYSURF = pygame.display.set_mode((1000,800))
+        Main.screen = pygame.display.set_mode((1000,800))
+        Main.background = pygame.Surface(Main.screen.get_size())
         #init mouse status variables
         self.mouse_pressed = False
         self.mouse_down = False
@@ -76,14 +76,17 @@ class Main:
             #if m1 is held down and there is a target sprite
             #constantly update its group's position to the mouse's
             if self.mouse_down and  self.target is not None:
-                #self.target.pos = self.mousepos
+                self.drawboard(0,1)
+                self.fillcolor = self.screen.get_at((self.target.pos[0],
+                                                         self.target.pos[1]))
+                print self.fillcolor
                 self.targetgroup = self.target.groups()
-                self.targetgroup[0].update(self.mousepos, True)
+                self.targetgroup[0].update(self.mousepos, True, self.fillcolor)
                 pygame.display.flip()
             #when the mouse is released, draw the sprite in its new position
             #reset target to none
             if self.mouse_released:
-                self.targetgroup[0].draw(Main.DISPLAYSURF)
+                self.targetgroup[0].draw(Main.screen)
                 self.target = None
                 self.mouse_pressed = False
                 self.mouse_released = False
@@ -111,8 +114,9 @@ class Main:
             self.cornerx = ((self.col-1)*125) 
             self.cornery = self.row*100
             #draw calculated rectangles
-            pygame.draw.rect(Main.DISPLAYSURF, self.spacecolor,
+            self.squarerect = pygame.draw.rect(Main.screen, self.spacecolor,
                             (self.cornerx,self.cornery,125,100))
+            self.background.subsurface(self.squarerect) 
             #once we reach the 8th col, set variables to first column on the next row
             if self.col == 8:
                 self.col = 1
@@ -126,23 +130,22 @@ class Main:
             if x < 8:
                 self.pawncolor = "black"
                 self.pawnpos = (50 + 125*x, 150)
-                if x %2 == 0:
-                    self.fillcolor = (0,0,0)
-                else:
-                    self.fillcolor = (255,255,255)
+                self.fillcolor = self.screen.get_at((self.pawnpos[0],
+                                                         self.pawnpos[1]))
             elif x >= 8:
                 self.pawncolor = "white"
                 self.pawnpos = (50+125*(x-8), 600)
-                if x %2 != 0:
-                    self.fillcolor = (0,0,0)
-                else:
-                    self.fillcolor = (255,255,255)
+                self.fillcolor = self.screen.get_at((self.pawnpos[0],
+                                                         self.pawnpos[1]))
+
             self.ind_pawn_name = "pawn" + str(x)
             self.pawn = chessPiece(self.pawncolor, "pawn",
-                                   self.ind_pawn_name, self.pawnpos, self.fillcolor)
+                                   self.ind_pawn_name, self.pawnpos)
             self.pawnsdict["pawn"+str(x)].add(self.pawn)
-            self.pawnsdict["pawn"+str(x)].update(self.pawnpos, False)
-            self.pawnsdict["pawn"+str(x)].draw(Main.DISPLAYSURF)
+            self.pawnsdict["pawn"+str(x)].update(self.pawnpos, False, self.fillcolor)
+            self.pawnsdict["pawn"+str(x)].draw(Main.screen)
+            print self.ind_pawn_name
+            print self.fillcolor
             pygame.display.flip()
     def makepieces(self):
         for x in range (0,16):
@@ -150,17 +153,13 @@ class Main:
             if x < 8:
                 self.piececolor = "black"
                 self.piecepos = (50+125*x, 50)
-                if x %2 != 0:
-                    self.fillcolor = (0,0,0)
-                else:
-                    self.fillcolor = (255,255,255)
+                self.fillcolor = self.screen.get_at((self.piecepos[0],
+                                                         self.piecepos[1]))
             elif x >= 8:
                 self.piececolor = "white"
                 self.piecepos = (50+125*(x-8), 700)
-                if x %2 == 0:
-                    self.fillcolor = (0,0,0)
-                else:
-                    self.fillcolor = (255,255,255)
+                self.fillcolor = self.screen.get_at((self.piecepos[0],
+                                                         self.piecepos[1]))
             rooks = [0,7,8,15]
             knights = [1,6,9,14]
             bishops = [2,5,10,13]
@@ -178,11 +177,12 @@ class Main:
                 self.piecename = "queen"
             self.ind_piece_name = self.piecename + str(x)
             self.piece = chessPiece(self.piececolor, self.piecename,
-                                    self.ind_piece_name,self.piecepos,
-                                    self.fillcolor)
+                                    self.ind_piece_name,self.piecepos)
             self.piecesdict["piece"+str(x)].add(self.piece)
-            self.piecesdict["piece"+str(x)].update(self.piecepos, False)
-            self.piecesdict["piece"+str(x)].draw(Main.DISPLAYSURF)
+            self.piecesdict["piece"+str(x)].update(self.piecepos, False, self.fillcolor)
+            self.piecesdict["piece"+str(x)].draw(Main.screen)
+            print self.ind_piece_name
+            print self.fillcolor
             pygame.display.flip()       
 #mainloop
 if __name__=="__main__":
