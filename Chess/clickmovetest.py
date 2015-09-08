@@ -73,23 +73,28 @@ class Main:
                         self.mousepos[1]>=(sprite.pos[1]-sprite.size) and
                         self.mousepos[1]<=(sprite.pos[1]+sprite.size)):
                         self.target=sprite
-                self.fillcolor = self.screen.get_at((self.mousepos[0],
-                                                     self.mousepos[1]))
+                self.mousex = self.mousepos[0]
+                self.mousey = self.mousepos[1]
             #if m1 is held down and there is a target sprite
             #constantly update its group's position to the mouse's
-            if self.mouse_down and  self.target is not None:
-
+            if self.mouse_released and  self.target is not None:
+                self.mouse_pressed == False
                 print self.fillcolor
                 self.targetgroup = self.target.groups()
-                self.targetgroup[0].update(self.mousepos, True, self.fillcolor)
-                pygame.display.flip()
+                #YES YES YES
+                if self.mouse_pressed:
+                    self.targetgroup[0].update(self.mousepos,
+                                               True, self.screen.get_at((self.mousex,
+                                                                        self.mousey)))
+                    self.drawboard(0,1)
+                    for name, spritegroup in self.alldict.iteritems():
+                        spritegroup.draw(Main.screen)
+                    pygame.display.flip()
+                    self.target = None
+                    self.mouse_pressed = False
+                    self.mouse_released = False
             #when the mouse is released, draw the sprite in its new position
             #reset target to none
-            if self.mouse_released:
-                self.targetgroup[0].draw(Main.screen)
-                self.target = None
-                self.mouse_pressed = False
-                self.mouse_released = False
             pygame.display.update()
             fpsclock.tick(FPS)
     def drawboard(self,row,col):
